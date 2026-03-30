@@ -1,0 +1,38 @@
+trigger_chore:
+  name: Trigger Chore
+  description: >-
+    Trigger a chore via its webhook, creating a one-off schedule for today.
+  fields:
+    trigger_uuid:
+      name: Trigger UUID
+      description: The UUID of the chore trigger to fire.
+      required: true
+      selector:
+        select:
+          options: []
+          mode: dropdown
+    assign_to:
+      name: Assign To
+      description: >-
+        Username to assign the chore to. If omitted, uses the trigger's default assignee.
+      required: false
+      selector:
+        select:
+          options: []
+          mode: dropdown
+    due_by:
+      name: Due By
+      description: >-
+        Time by which the chore must be completed (e.g. 18:00).
+        Overrides the trigger's default.
+      required: false
+      selector:
+        time:
+    available_at:
+      name: Available At
+      description: >-
+        Time at which the chore becomes available (e.g. 08:00).
+        Overrides the trigger's default.
+      required: false
+      selector:
+        time:
