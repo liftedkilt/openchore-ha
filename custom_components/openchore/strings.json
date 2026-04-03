@@ -23,6 +23,19 @@
       "already_configured": "This OpenChore server is already configured"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "OpenChore Options",
+        "data": {
+          "scan_interval": "Scan interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to poll the OpenChore server for updated chore data (30\u20133600 seconds)."
+        }
+      }
+    }
+  },
   "services": {
     "trigger_chore": {
       "name": "Trigger Chore",

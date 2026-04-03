@@ -8,9 +8,10 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.core import callback
 
-from .const import CONF_TOKEN, CONF_URL, DOMAIN
+from .const import CONF_SCAN_INTERVAL, CONF_TOKEN, CONF_URL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,10 +52,42 @@ async def _validate_connection(url: str, token: str) -> dict[str, str] | None:
         return {"error": "unknown"}
 
 
+class OpenChoreOptionsFlowHandler(OptionsFlow):
+    """Handle OpenChore options."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        current_interval = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_SCAN_INTERVAL, default=current_interval
+                    ): vol.All(int, vol.Range(min=30, max=3600)),
+                }
+            ),
+        )
+
+
 class OpenChoreConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for OpenChore."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return OpenChoreOptionsFlowHandler()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
