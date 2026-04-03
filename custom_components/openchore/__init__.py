@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
@@ -17,14 +19,18 @@ from .const import (
     ATTR_AVAILABLE_AT,
     ATTR_DUE_BY,
     ATTR_TRIGGER_UUID,
+    CONF_SCAN_INTERVAL,
     CONF_TOKEN,
     CONF_URL,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     SERVICE_TRIGGER_CHORE,
 )
 from .coordinator import OpenChoreCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 OpenChoreConfigEntry = ConfigEntry[OpenChoreCoordinator]
 
@@ -45,11 +51,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: OpenChoreConfigEntry) ->
 
     coordinator = OpenChoreCoordinator(hass, url, token)
 
+    # Apply scan interval from options (or default)
+    scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    coordinator.update_interval = timedelta(seconds=scan_interval)
+
     # Perform initial data fetch; raises ConfigEntryNotReady on failure
     await coordinator.async_config_entry_first_refresh()
 
     # Store the coordinator on the entry's runtime_data
     entry.runtime_data = coordinator
+
+    # Forward sensor platform setup
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Listen for options updates
+    entry.async_on_unload(entry.add_update_listener(_async_update_options))
 
     # Register service (only once, even with multiple config entries)
     if not hass.services.has_service(DOMAIN, SERVICE_TRIGGER_CHORE):
@@ -64,8 +80,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: OpenChoreConfigEntry) ->
     return True
 
 
+async def _async_update_options(
+    hass: HomeAssistant, entry: OpenChoreConfigEntry
+) -> None:
+    """Handle options update."""
+    coordinator = entry.runtime_data
+    coordinator.update_interval = timedelta(
+        seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    )
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: OpenChoreConfigEntry) -> bool:
     """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     # If this was the last entry, remove our services
     remaining = [
         e
@@ -74,8 +101,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: OpenChoreConfigEntry) -
     ]
     if not remaining:
         hass.services.async_remove(DOMAIN, SERVICE_TRIGGER_CHORE)
-
-    return True
+    return unload_ok
 
 
 def _get_coordinator(hass: HomeAssistant) -> OpenChoreCoordinator:
