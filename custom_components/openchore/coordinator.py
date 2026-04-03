@@ -107,6 +107,11 @@ class OpenChoreCoordinator(DataUpdateCoordinator[OpenChoreData]):
                         raise UpdateFailed("Forbidden (403) - check API token permissions")
                     resp.raise_for_status()
                     data = await resp.json()
+                    _LOGGER.debug(
+                        "Fetched %d chores and %d users from OpenChore",
+                        len(data.get("chores", [])),
+                        len(data.get("users", [])),
+                    )
                     return OpenChoreData(data)
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error communicating with OpenChore: {err}") from err
