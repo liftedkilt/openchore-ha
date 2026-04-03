@@ -81,6 +81,33 @@ if "homeassistant" not in sys.modules:
         def __class_getitem__(cls, item):
             return cls
 
+    class _ConfigFlow:
+        """Mock ConfigFlow that accepts domain= keyword in subclass."""
+        def __init_subclass__(cls, domain=None, **kwargs):
+            super().__init_subclass__(**kwargs)
+            cls.domain = domain
+
+        def async_show_form(self, *, step_id, data_schema, errors=None, **kwargs):
+            return {"type": "form", "step_id": step_id, "data_schema": data_schema, "errors": errors or {}}
+
+        def async_create_entry(self, *, title=None, data=None, **kwargs):
+            return {"type": "create_entry", "title": title, "data": data}
+
+        def async_abort(self, *, reason, **kwargs):
+            return {"type": "abort", "reason": reason}
+
+    class _OptionsFlow:
+        """Mock OptionsFlow base class."""
+        config_entry = None
+        hass = None
+        flow_id = None
+
+        def async_show_form(self, *, step_id, data_schema, errors=None, **kwargs):
+            return {"type": "form", "step_id": step_id, "data_schema": data_schema, "errors": errors or {}}
+
+        def async_create_entry(self, *, title=None, data=None, **kwargs):
+            return {"type": "create_entry", "title": title, "data": data}
+
     class _HomeAssistantError(Exception):
         pass
 
@@ -90,7 +117,7 @@ if "homeassistant" not in sys.modules:
     # Build module tree
     ha = _make_module("homeassistant")
     _make_module("homeassistant.core", {"HomeAssistant": MagicMock, "ServiceCall": MagicMock, "callback": lambda f: f})
-    _make_module("homeassistant.config_entries", {"ConfigEntry": _ConfigEntry, "ConfigFlow": MagicMock, "ConfigFlowResult": MagicMock, "OptionsFlow": MagicMock})
+    _make_module("homeassistant.config_entries", {"ConfigEntry": _ConfigEntry, "ConfigFlow": _ConfigFlow, "ConfigFlowResult": dict, "OptionsFlow": _OptionsFlow})
     _make_module("homeassistant.const", {"Platform": _Platform})
     _make_module("homeassistant.exceptions", {"HomeAssistantError": _HomeAssistantError, "ServiceValidationError": _ServiceValidationError})
 
