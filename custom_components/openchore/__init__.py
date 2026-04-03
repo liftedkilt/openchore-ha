@@ -118,10 +118,16 @@ def _update_service_description(
 ) -> None:
     """Push dynamic selector options into the service description."""
     if not coordinator.data:
+        _LOGGER.debug("No coordinator data yet, skipping service description update")
         return
 
     trigger_options = coordinator.data.trigger_options
     user_options = coordinator.data.user_options
+    _LOGGER.debug(
+        "Updating service description: %d trigger options, %d user options",
+        len(trigger_options),
+        len(user_options),
+    )
 
     async_set_service_schema(
         hass,
