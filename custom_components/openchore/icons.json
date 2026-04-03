@@ -1,0 +1,8 @@
+{
+  "integration": "mdi:clipboard-check",
+  "services": {
+    "trigger_chore": {
+      "service": "mdi:play-circle"
+    }
+  }
+}
